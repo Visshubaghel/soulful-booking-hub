@@ -60,7 +60,7 @@ let chatSessionInstance: ChatSession | null = null;
 export const getChatSession = () => {
   if (!chatSessionInstance) {
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       systemInstruction,
       tools: [
         {
@@ -102,6 +102,6 @@ export const sendMessageToGemini = async (message: string) => {
     return result.response.text();
   } catch (error) {
     console.error("Gemini API Error:", error);
-    return "I'm sorry, I'm having trouble connecting right now. Please try again or contact us via WhatsApp!";
+    return `Detailed Error: ${(error as any).message || JSON.stringify(error)}`;
   }
 };
