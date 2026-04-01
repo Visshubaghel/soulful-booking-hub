@@ -9,6 +9,7 @@ const navLinks = [
   { label: "Home", to: "/" },
   { label: "About Us", to: "/about" },
   { label: "Our Services", to: "/services" },
+  { label: "Book Appointment", to: "/book" },
   { label: "Blog", to: "/blog" },
   { label: "Contact Us", to: "/contact" },
 ];
@@ -75,7 +76,7 @@ const Navbar = () => {
                   Sign In
                 </Button>
               </Link>
-              <Link to="/contact">
+              <Link to="/book">
                 <Button className="gradient-rose text-primary-foreground font-body font-semibold px-6">
                   Book Appointment
                 </Button>
@@ -139,7 +140,7 @@ const Navbar = () => {
                       Sign In / Register
                     </Button>
                   </Link>
-                  <Link to="/contact" onClick={() => setOpen(false)}>
+                  <Link to="/book" onClick={() => setOpen(false)}>
                     <Button className="w-full gradient-rose text-primary-foreground font-body font-semibold mt-2">
                       Book Appointment
                     </Button>

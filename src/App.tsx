@@ -11,6 +11,7 @@ import Blog from "./pages/Blog.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Chatbot from "./components/Chatbot.tsx";
 import Login from "./pages/Login.tsx";
+import BookAppointment from "./pages/BookAppointment.tsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
 import { AuthProvider } from "./lib/AuthContext.tsx";
 
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/services" element={<Services />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/blog" element={<Blog />} />
+            <Route path="/book" element={<BookAppointment />} />
             <Route path="/login" element={<Login />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="*" element={<NotFound />} />

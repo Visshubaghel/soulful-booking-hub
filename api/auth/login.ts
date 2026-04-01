@@ -1,22 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import * as bcryptjs from 'bcryptjs';
-import * as jsonwebtoken from 'jsonwebtoken';
-import * as cookiePkg from 'cookie';
-import connectToDatabase from '../_lib/db';
-import { User } from '../_models/User';
+import { createToken, makeAuthCookie, setCorsHeaders } from '../_lib/auth';
 
-const bcrypt = (bcryptjs as any).default || bcryptjs;
-const jwt = (jsonwebtoken as any).default || jsonwebtoken;
-const { serialize } = (cookiePkg as any).default || cookiePkg;
-
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_only_for_dev';
-
-function setCorsHeaders(res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-}
+// Hardcoded admin credentials — only one admin
+const ADMIN_EMAIL = 'visshubaghel@gmail.com';
+const ADMIN_PASSWORD = 'chhotesahab';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
@@ -30,47 +17,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    await connectToDatabase();
-
-    const { email, password } = req.body;
+    const { email, password } = req.body || {};
 
     if (!email || !password) {
-      return res.status(400).json({ message: 'Missing fields' });
+      return res.status(400).json({ message: 'Email and password required' });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
-    if (!user) {
+    const normalizedEmail = email.toLowerCase().trim();
+
+    if (normalizedEmail !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    const token = jwt.sign(
-      { userId: user._id, role: user.role, email: user.email },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
-    const cookie = serialize('auth', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-      path: '/'
+    // Generate token (expires in 7 days)
+    const token = createToken({
+      email: ADMIN_EMAIL,
+      role: 'admin',
+      exp: Date.now() + 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.setHeader('Set-Cookie', cookie);
+    // Set cookie
+    res.setHeader('Set-Cookie', makeAuthCookie(token, 60 * 60 * 24 * 7));
 
     return res.status(200).json({
       message: 'Login successful',
       token,
-      user: { name: user.name, email: user.email, role: user.role }
+      user: { name: 'Admin', email: ADMIN_EMAIL, role: 'admin' },
     });
   } catch (error: any) {
-    console.error("Login Error", error);
-    return res.status(500).json({ message: 'Internal Server Error', error: error.message });
+    console.error('Login Error:', error);
+    return res.status(500).json({ message: 'Internal Server Error', detail: error.message });
   }
 }

@@ -20,7 +20,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // Restore user from localStorage (JWT cookie is HttpOnly, so we keep metadata separately)
     const storedUser = localStorage.getItem('userMeta');
     if (storedUser) {
       try {
@@ -48,14 +47,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = async () => {
     try {
-      // Call logout endpoint to clear the HttpOnly cookie
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
-    } catch {
-      // Ignore errors — we still clear local state
-    }
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    } catch { /* ignore */ }
     localStorage.removeItem('userMeta');
     localStorage.removeItem('authToken');
     setUser(null);

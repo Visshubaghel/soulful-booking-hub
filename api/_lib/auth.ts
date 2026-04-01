@@ -1,15 +1,32 @@
-import * as jsonwebtoken from 'jsonwebtoken';
+import crypto from 'crypto';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const jwt = (jsonwebtoken as any).default || jsonwebtoken;
+const SECRET = process.env.JWT_SECRET || 'docis_fallback_secret_2026';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_only_for_dev';
+// ── Simple HMAC token (Node built-in crypto, zero external deps) ──
 
-export interface JwtPayload {
-  userId: string;
-  role: 'admin' | 'user';
-  email: string;
+export function createToken(payload: Record<string, any>): string {
+  const data = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const sig = crypto.createHmac('sha256', SECRET).update(data).digest('base64url');
+  return `${data}.${sig}`;
 }
+
+export function verifyToken(token: string): Record<string, any> | null {
+  const parts = token.split('.');
+  if (parts.length !== 2) return null;
+  const [data, sig] = parts;
+  const expectedSig = crypto.createHmac('sha256', SECRET).update(data).digest('base64url');
+  if (sig !== expectedSig) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(data, 'base64url').toString());
+    if (payload.exp && payload.exp < Date.now()) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+// ── Token extraction from request ──
 
 export function getTokenFromRequest(req: VercelRequest): string | null {
   // Try cookie first
@@ -22,29 +39,37 @@ export function getTokenFromRequest(req: VercelRequest): string | null {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     return authHeader.slice(7);
   }
-
   return null;
 }
 
-export function verifyAdmin(req: VercelRequest, res: VercelResponse): JwtPayload | null {
+// ── Admin verification ──
+
+export function verifyAdmin(req: VercelRequest, res: VercelResponse): Record<string, any> | null {
   const token = getTokenFromRequest(req);
   if (!token) {
     res.status(401).json({ message: 'Unauthorized: no token' });
     return null;
   }
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
-    if (decoded.role !== 'admin') {
-      res.status(403).json({ message: 'Forbidden: admin only' });
-      return null;
-    }
-    return decoded;
-  } catch {
-    res.status(401).json({ message: 'Unauthorized: invalid token' });
+  const payload = verifyToken(token);
+  if (!payload) {
+    res.status(401).json({ message: 'Unauthorized: invalid or expired token' });
     return null;
   }
+  if (payload.role !== 'admin') {
+    res.status(403).json({ message: 'Forbidden: admin only' });
+    return null;
+  }
+  return payload;
 }
+
+// ── Cookie helper (no external cookie lib) ──
+
+export function makeAuthCookie(token: string, maxAge: number): string {
+  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+  return `auth=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${maxAge}${secure}`;
+}
+
+// ── CORS ──
 
 export function setCorsHeaders(res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
