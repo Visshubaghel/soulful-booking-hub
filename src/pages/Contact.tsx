@@ -18,10 +18,39 @@ const Contact = () => {
     message: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Thank you! We'll get back to you shortly.");
-    setFormData({ name: "", email: "", phone: "", concern: "", message: "" });
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          access_key: import.meta.env.VITE_WEB3FORMS_ACCESS_KEY || "YOUR_WEB3FORMS_ACCESS_KEY_HERE",
+          subject: `New Appointment Enquiry from ${formData.name}`,
+          from_name: "Soulful Booking Hub",
+          ...formData,
+        }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success("Thank you! We'll get back to you shortly.");
+        setFormData({ name: "", email: "", phone: "", concern: "", message: "" });
+      } else {
+        toast.error(result.message || "Something went wrong. Please try again.");
+      }
+    } catch (error) {
+      toast.error("Failed to submit. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -132,9 +161,9 @@ const Contact = () => {
                       className="font-body"
                     />
                   </div>
-                  <Button type="submit" size="lg" className="w-full gradient-rose text-primary-foreground font-body font-semibold py-6">
+                  <Button type="submit" size="lg" disabled={isSubmitting} className="w-full gradient-rose text-primary-foreground font-body font-semibold py-6">
                     <Send className="w-4 h-4 mr-2" />
-                    Submit Enquiry
+                    {isSubmitting ? "Submitting..." : "Submit Enquiry"}
                   </Button>
                 </form>
               </motion.div>
