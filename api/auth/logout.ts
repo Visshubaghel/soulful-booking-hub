@@ -1,5 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { serialize } from 'cookie';
+import * as cookiePkg from 'cookie';
+
+const { serialize } = (cookiePkg as any).default || cookiePkg;
 
 function setCorsHeaders(res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -15,7 +17,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).end();
   }
 
-  // Clear the auth cookie by setting maxAge to 0
+  // Clear the auth cookie
   const cookie = serialize('auth', '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',

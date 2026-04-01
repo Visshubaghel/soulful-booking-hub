@@ -1,5 +1,7 @@
-import jwt from 'jsonwebtoken';
+import * as jsonwebtoken from 'jsonwebtoken';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+const jwt = (jsonwebtoken as any).default || jsonwebtoken;
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_only_for_dev';
 

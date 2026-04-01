@@ -1,9 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { serialize } from 'cookie';
+import * as bcryptjs from 'bcryptjs';
+import * as jsonwebtoken from 'jsonwebtoken';
+import * as cookiePkg from 'cookie';
 import connectToDatabase from '../_lib/db';
 import { User } from '../_models/User';
+
+const bcrypt = (bcryptjs as any).default || bcryptjs;
+const jwt = (jsonwebtoken as any).default || jsonwebtoken;
+const { serialize } = (cookiePkg as any).default || cookiePkg;
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_only_for_dev';
 
@@ -54,7 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 1 week
+      maxAge: 60 * 60 * 24 * 7,
       path: '/'
     });
 
@@ -65,8 +69,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       token,
       user: { name: user.name, email: user.email, role: user.role }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Login Error", error);
-    return res.status(500).json({ message: 'Internal Server Error' });
+    return res.status(500).json({ message: 'Internal Server Error', error: error.message });
   }
 }
