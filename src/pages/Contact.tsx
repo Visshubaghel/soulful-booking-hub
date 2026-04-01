@@ -32,7 +32,7 @@ const Contact = () => {
           Accept: "application/json",
         },
         body: JSON.stringify({
-          access_key: import.meta.env.VITE_WEB3FORMS_ACCESS_KEY || "YOUR_WEB3FORMS_ACCESS_KEY_HERE",
+          access_key: "2fadd96e-67e3-4aa9-8b6a-8daf18765074",
           subject: `New Appointment Enquiry from ${formData.name}`,
           from_name: "Soulful Booking Hub",
           ...formData,
