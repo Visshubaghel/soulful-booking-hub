@@ -24,7 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Role logic: specific admin email grants admin role
-    const role = email === 'admin@radianceclinic.com' ? 'admin' : 'user';
+    const role = email === 'visshubaghel@gmail.com' ? 'admin' : 'user';
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
