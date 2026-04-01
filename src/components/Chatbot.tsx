@@ -38,8 +38,8 @@ const Chatbot = () => {
     try {
       const response = await sendMessageToGemini(userText);
       setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), text: response, sender: "bot" }]);
-    } catch (error) {
-      setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), text: "I'm having trouble connecting right now. Please try again later.", sender: "bot" }]);
+    } catch (error: any) {
+      setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), text: `ERROR: ${error.message || JSON.stringify(error)}`, sender: "bot" }]);
     } finally {
       setIsTyping(false);
     }
