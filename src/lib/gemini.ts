@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI, FunctionDeclaration, SchemaType, ChatSession } from "@google/generative-ai";
 
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "YOUR_API_KEY";
+const apiKey = "AIzaSyD_i7cTvciXzBSZUCVs9DvB8byGkuuBe_k";
 const genAI = new GoogleGenerativeAI(apiKey);
 
 // MOCK FUNCTION FOR FUTURE ADMIN PORTAL
