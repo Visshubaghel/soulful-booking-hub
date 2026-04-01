@@ -1,9 +1,26 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { serialize } from 'cookie';
 import connectToDatabase from '../_lib/db';
 import { User } from '../_models/User';
 
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_only_for_dev';
+
+function setCorsHeaders(res: VercelResponse) {
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  setCorsHeaders(res);
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
@@ -17,27 +34,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ message: 'Missing fields' });
     }
 
+    const normalizedEmail = email.toLowerCase().trim();
+
     // Check if user exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
     // Role logic: specific admin email grants admin role
-    const role = email === 'visshubaghel@gmail.com' ? 'admin' : 'user';
+    const role = normalizedEmail === 'visshubaghel@gmail.com' ? 'admin' : 'user';
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = new User({
-      name,
-      email,
+      name: name.trim(),
+      email: normalizedEmail,
       password: hashedPassword,
       role
     });
 
     await newUser.save();
 
-    return res.status(201).json({ message: 'User created successfully', user: { name: newUser.name, email: newUser.email, role: newUser.role } });
+    // Auto-login: generate JWT token so user doesn't have to sign in again
+    const token = jwt.sign(
+      { userId: newUser._id, role: newUser.role, email: newUser.email },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    const cookie = serialize('auth', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7,
+      path: '/'
+    });
+
+    res.setHeader('Set-Cookie', cookie);
+
+    return res.status(201).json({
+      message: 'Account created successfully',
+      token,
+      user: { name: newUser.name, email: newUser.email, role: newUser.role }
+    });
   } catch (error) {
     console.error("Registration Error", error);
     return res.status(500).json({ message: 'Internal Server Error' });

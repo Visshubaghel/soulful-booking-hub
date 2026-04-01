@@ -9,7 +9,9 @@ interface User {
 interface AuthContextType {
   user: User | null;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
-  logout: () => void;
+  logout: () => Promise<void>;
+  getAuthHeaders: () => Record<string, string>;
+  saveAuth: (user: User, token: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,21 +20,49 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // Basic persistent user logic using localStorage since JWT is HttpOnly cookie
+    // Restore user from localStorage (JWT cookie is HttpOnly, so we keep metadata separately)
     const storedUser = localStorage.getItem('userMeta');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch {
+        localStorage.removeItem('userMeta');
+        localStorage.removeItem('authToken');
+      }
     }
   }, []);
 
+  const saveAuth = (userData: User, token: string) => {
+    localStorage.setItem('userMeta', JSON.stringify(userData));
+    localStorage.setItem('authToken', token);
+    setUser(userData);
+  };
+
+  const getAuthHeaders = (): Record<string, string> => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      return { Authorization: `Bearer ${token}` };
+    }
+    return {};
+  };
+
   const logout = async () => {
-    // In a real app we would call /api/auth/logout to clear the HttpOnly cookie
+    try {
+      // Call logout endpoint to clear the HttpOnly cookie
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch {
+      // Ignore errors — we still clear local state
+    }
     localStorage.removeItem('userMeta');
+    localStorage.removeItem('authToken');
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, logout }}>
+    <AuthContext.Provider value={{ user, setUser, logout, getAuthHeaders, saveAuth }}>
       {children}
     </AuthContext.Provider>
   );
