@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import connectToDatabase from '../../_lib/db';
-import { setCorsHeaders, verifyAdmin } from '../../_lib/auth';
-import { Slot } from '../../_models/Slot';
+import connectToDatabase from '../../_lib/db.js';
+import { setCorsHeaders, verifyAdmin } from '../../_lib/auth.js';
+import { Slot } from '../../_models/Slot.js';
 
 // Generate all time slots for a day (10:30 AM to 7:00 PM, every 30 min)
 function generateDaySlots(date: string) {

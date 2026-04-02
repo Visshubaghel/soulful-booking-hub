@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import connectToDatabase from '../_lib/db';
-import { setCorsHeaders } from '../_lib/auth';
-import { Slot } from '../_models/Slot';
+import connectToDatabase from '../_lib/db.js';
+import { setCorsHeaders } from '../_lib/auth.js';
+import { Slot } from '../_models/Slot.js';
 
 /**
  * GET /api/slots/available?date=YYYY-MM-DD

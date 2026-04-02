@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import connectToDatabase from '../../_lib/db';
-import { setCorsHeaders, verifyAdmin } from '../../_lib/auth';
-import { Appointment } from '../../_models/Appointment';
+import connectToDatabase from '../../_lib/db.js';
+import { setCorsHeaders, verifyAdmin } from '../../_lib/auth.js';
+import { Appointment } from '../../_models/Appointment.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
