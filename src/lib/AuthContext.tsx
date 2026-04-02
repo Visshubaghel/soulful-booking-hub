@@ -1,70 +1,95 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 
 interface User {
+  id?: string;
   name: string;
   email: string;
-  role: 'admin' | 'user';
+  role: string;
 }
 
 interface AuthContextType {
+  isLoggedIn: boolean;
+  isAdmin: boolean;
   user: User | null;
-  setUser: React.Dispatch<React.SetStateAction<User | null>>;
-  logout: () => Promise<void>;
+  login: (token: string, user: User) => void;
+  logout: () => void;
   getAuthHeaders: () => Record<string, string>;
-  saveAuth: (user: User, token: string) => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType>({
+  isLoggedIn: false,
+  isAdmin: false,
+  user: null,
+  login: () => {},
+  logout: () => {},
+  getAuthHeaders: () => ({}),
+});
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+// Helper component so we can use `useAuth` directly
+export const useAuth = () => useContext(AuthContext);
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('userMeta');
-    if (storedUser) {
+    // Check for token in cookies or localStorage
+    const token = localStorage.getItem('token') || document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+    
+    if (token) {
       try {
-        setUser(JSON.parse(storedUser));
-      } catch {
-        localStorage.removeItem('userMeta');
-        localStorage.removeItem('authToken');
+        // The backend token format is <base64url_data>.<signature>
+        // Replace base64url characters with standard base64 characters
+        let base64 = token.split('.')[0].replace(/-/g, '+').replace(/_/g, '/');
+        // Pad to 4 characters
+        while (base64.length % 4) {
+          base64 += '=';
+        }
+        
+        const payload = JSON.parse(atob(base64));
+        setIsLoggedIn(true);
+        setIsAdmin(payload.role === 'admin' || payload.isAdmin);
+        setUser({
+          id: payload.userId || payload.id,
+          name: payload.name || 'User',
+          email: payload.email || '',
+          role: payload.role || (payload.isAdmin ? 'admin' : 'user')
+        });
+      } catch (e) {
+        console.error("Failed to parse token", e);
+        logout();
       }
     }
   }, []);
 
-  const saveAuth = (userData: User, token: string) => {
-    localStorage.setItem('userMeta', JSON.stringify(userData));
-    localStorage.setItem('authToken', token);
+  const login = (token: string, userData: User) => {
+    localStorage.setItem('token', token);
+    document.cookie = `token=${token}; path=/; max-age=86400;`;
+    setIsLoggedIn(true);
+    setIsAdmin(userData.role === 'admin');
     setUser(userData);
   };
 
-  const getAuthHeaders = (): Record<string, string> => {
-    const token = localStorage.getItem('authToken');
+  const logout = () => {
+    localStorage.removeItem('token');
+    document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    setIsLoggedIn(false);
+    setIsAdmin(false);
+    setUser(null);
+  };
+
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
     if (token) {
-      return { Authorization: `Bearer ${token}` };
+      return { 'Authorization': `Bearer ${token}` };
     }
     return {};
   };
 
-  const logout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
-    } catch { /* ignore */ }
-    localStorage.removeItem('userMeta');
-    localStorage.removeItem('authToken');
-    setUser(null);
-  };
-
   return (
-    <AuthContext.Provider value={{ user, setUser, logout, getAuthHeaders, saveAuth }}>
+    <AuthContext.Provider value={{ isLoggedIn, isAdmin, user, login, logout, getAuthHeaders }}>
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };
