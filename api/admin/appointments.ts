@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import connectToDatabase from '../../_lib/db.js';
-import { setCorsHeaders, verifyAdmin } from '../../_lib/auth.js';
-import { Appointment } from '../../_models/Appointment.js';
-import { Slot } from '../../_models/Slot.js';
+import connectToDatabase from '../_lib/db.js';
+import { setCorsHeaders, verifyAdmin } from '../_lib/auth.js';
+import { Appointment } from '../_models/Appointment.js';
+import { Slot } from '../_models/Slot.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
