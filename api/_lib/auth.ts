@@ -29,12 +29,17 @@ export function verifyToken(token: string): Record<string, any> | null {
 // ── Token extraction from request ──
 
 export function getTokenFromRequest(req: VercelRequest): string | null {
-  // Try cookie first
   const cookieHeader = req.headers.cookie || '';
-  const cookieMatch = cookieHeader.match(/(?:^|;\s*)auth=([^;]+)/);
-  if (cookieMatch) return cookieMatch[1];
+  
+  // Check 'auth' cookie (primary - set by makeAuthCookie)
+  const authCookieMatch = cookieHeader.match(/(?:^|;\s*)auth=([^;]+)/);
+  if (authCookieMatch) return authCookieMatch[1];
 
-  // Fallback: Authorization header
+  // Also check 'token' cookie (legacy - set by older frontend)
+  const tokenCookieMatch = cookieHeader.match(/(?:^|;\s*)token=([^;]+)/);
+  if (tokenCookieMatch) return tokenCookieMatch[1];
+
+  // Fallback: Authorization header (Bearer token)
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     return authHeader.slice(7);

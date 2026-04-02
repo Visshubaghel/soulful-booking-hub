@@ -170,10 +170,17 @@ const AdminDashboard = () => {
           const data = await res.json();
           setSlots(data.slots || []);
         } else {
-          toast.error("Failed to load slots");
+          let errorMsg = `Failed to load slots (HTTP ${res.status})`;
+          try {
+            const errData = await res.json();
+            errorMsg = errData.message || errorMsg;
+          } catch {}
+          console.error("[AdminDashboard] fetchSlots error:", errorMsg, "headers sent:", headers());
+          toast.error(errorMsg);
         }
-      } catch {
-        toast.error("Network error loading slots");
+      } catch (e: any) {
+        console.error("[AdminDashboard] fetchSlots network error:", e);
+        toast.error(`Network error: ${e?.message || "unknown"}`);
       } finally {
         setSlotsLoading(false);
       }

@@ -39,7 +39,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const match = document.cookie.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]+)'));
       return match ? match[1] : null;
     };
-    const token = localStorage.getItem('auth_token') || getCookieValue('auth');
+    // Check both new and old localStorage keys + both cookie names
+    const token = localStorage.getItem('auth_token') 
+      || localStorage.getItem('token')
+      || getCookieValue('auth')
+      || getCookieValue('token');
     
     if (token) {
       try {
@@ -82,7 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const getAuthHeaders = () => {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
     if (token) {
       return { 'Authorization': `Bearer ${token}` };
     }
