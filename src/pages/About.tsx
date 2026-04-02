@@ -19,7 +19,7 @@ const About = () => {
               <span className="section-label">About Us</span>
               <h1 className="section-heading mt-3 mb-6">Our Story & Mission</h1>
               <p className="section-subheading mx-auto">
-                Radiance Skin Clinic is where cutting-edge dermatological science meets compassionate, personalized care.
+                Vishwas Skin Clinic is where cutting-edge dermatological science meets compassionate, personalized care.
               </p>
             </motion.div>
           </div>
@@ -31,7 +31,7 @@ const About = () => {
             <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
               <h2 className="text-2xl md:text-3xl font-heading font-bold text-foreground mb-6">India's Premier Dermatology Clinic</h2>
               <p className="font-body text-muted-foreground leading-relaxed mb-4">
-                Radiance Skin Clinic combines advanced technology with highly renowned doctors performing dermatological treatments for all bodily concerns proficiently. We have cutting-edge techniques for laser and all aesthetic treatments.
+                Vishwas Skin Clinic combines advanced technology with highly renowned doctors performing dermatological treatments for all bodily concerns proficiently. We have cutting-edge techniques for laser and all aesthetic treatments.
               </p>
               <p className="font-body text-muted-foreground leading-relaxed mb-4">
                 Our team of internationally trained doctors have remarkable skills and experience in dermatology that allows them to deal with various skin types and hair types. We aim to give you flawless, beautiful-looking skin, hair, and the body you desire.

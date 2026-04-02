@@ -12,7 +12,7 @@ interface Message {
 const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { id: "1", text: "Hi! I'm the Soulful Assistant. How can I help you today?", sender: "bot" }
+    { id: "1", text: "Hi! I'm the Vishwas Assistant. How can I help you today?", sender: "bot" }
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -59,7 +59,7 @@ const Chatbot = () => {
             <div className="bg-primary text-primary-foreground px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Bot size={20} />
-                <span className="font-semibold font-heading">Soulful Assistant</span>
+                <span className="font-semibold font-heading">Vishwas Assistant</span>
               </div>
               <button onClick={() => setIsOpen(false)} className="text-primary-foreground/80 hover:text-white transition-colors">
                 <X size={20} />

@@ -21,9 +21,9 @@ const AboutSection = () => {
             transition={{ duration: 0.6 }}
           >
             <span className="section-label">About Us</span>
-            <h2 className="section-heading mt-3 mb-6">Radiance Skin Clinic</h2>
+            <h2 className="section-heading mt-3 mb-6">Vishwas Skin Clinic</h2>
             <p className="font-body text-muted-foreground leading-relaxed mb-4">
-              Radiance Skin Clinic combines advanced technology with highly renowned doctors performing dermatological treatments for all concerns proficiently. We have cutting-edge techniques for laser and all aesthetic treatments.
+              Vishwas Skin Clinic combines advanced technology with highly renowned doctors performing dermatological treatments for all concerns proficiently. We have cutting-edge techniques for laser and all aesthetic treatments.
             </p>
             <p className="font-body text-muted-foreground leading-relaxed mb-8">
               Our team of internationally trained doctors have remarkable skills and experience, allowing them to deal with various skin and hair types. We aim to give you flawless, beautiful-looking skin, hair, and a shaped body.
@@ -50,7 +50,7 @@ const AboutSection = () => {
           >
             <img
               src={clinicImage}
-              alt="Radiance Skin Clinic Interior"
+              alt="Vishwas Skin Clinic Interior"
               className="rounded-2xl shadow-2xl w-full object-cover"
               loading="lazy"
               width={1200}

@@ -74,7 +74,7 @@ const Footer = () => {
 
         <div className="mt-12 pt-8 border-t border-primary-foreground/10 text-center">
           <p className="text-sm font-body text-primary-foreground/50">
-            © {new Date().getFullYear()} Radiance Skin Clinic. All rights reserved.
+            © {new Date().getFullYear()} Vishwas Skin Clinic. All rights reserved.
           </p>
         </div>
       </div>

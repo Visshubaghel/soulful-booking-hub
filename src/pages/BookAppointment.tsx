@@ -136,7 +136,7 @@ const BookAppointment = () => {
         body: JSON.stringify({
           access_key: "2fadd96e-67e3-4aa9-8b6a-8daf18765074",
           subject: `New Appointment Booking: ${formData.name}`,
-          from_name: "Soulful Booking Hub",
+          from_name: "Vishwas Skin Clinic",
           message: `Booking for ${formData.name} on ${selectedDate} at ${selectedSlot}. Service: ${formData.service}. Notes: ${formData.notes}. Phone: ${formData.phone}`,
           name: formData.name,
           email: formData.email,
