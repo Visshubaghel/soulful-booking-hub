@@ -15,6 +15,8 @@ import {
   RefreshCw,
   Shield,
   UserPlus,
+  Edit,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,6 +74,21 @@ function shiftDate(dateStr: string, days: number) {
   return d.toISOString().split("T")[0];
 }
 
+// All 30-min time slots from 10:30 AM to 7:00 PM
+const timeSlotOptions: string[] = (() => {
+  const slots: string[] = [];
+  const start = 10 * 60 + 30;
+  const end = 19 * 60;
+  for (let m = start; m < end; m += 30) {
+    const h = Math.floor(m / 60);
+    const min = m % 60;
+    const suffix = h >= 12 ? "PM" : "AM";
+    const displayH = h > 12 ? h - 12 : h === 0 ? 12 : h;
+    slots.push(`${displayH}:${min.toString().padStart(2, "0")} ${suffix}`);
+  }
+  return slots;
+})();
+
 // ───────────────────────── Component ─────────────────────────
 const AdminDashboard = () => {
   const { user, logout, getAuthHeaders } = useAuth();
@@ -106,6 +123,10 @@ const AdminDashboard = () => {
 
   // Loading for individual slot toggles
   const [togglingSlot, setTogglingSlot] = useState<string | null>(null);
+
+  // Edit Appointment Modal
+  const [editingAppt, setEditingAppt] = useState<AppointmentData | null>(null);
+  const [editApptLoading, setEditApptLoading] = useState(false);
 
   // ─── Auth guard ───
   useEffect(() => {
@@ -225,25 +246,38 @@ const AdminDashboard = () => {
     }
   };
 
-  // ─── Update appointment status ───
-  const updateAppointmentStatus = async (id: string, status: string) => {
+  // ─── Update appointment status or reschedule ───
+  const updateAppointment = async (id: string, updates: any) => {
     try {
       const res = await fetch("/api/admin/appointments", {
         method: "PATCH",
         headers: headers(),
         credentials: "include",
-        body: JSON.stringify({ id, status }),
+        body: JSON.stringify({ id, ...updates }),
       });
       if (res.ok) {
-        toast.success(`Status updated to ${status}`);
+        toast.success(`Appointment updated successfully`);
         fetchAppointments();
         fetchStats();
       } else {
-        toast.error("Failed to update status");
+        toast.error("Failed to update appointment");
       }
     } catch {
       toast.error("Network error");
     }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAppt) return;
+    setEditApptLoading(true);
+    await updateAppointment(editingAppt._id, {
+      status: editingAppt.status,
+      date: editingAppt.date,
+      time: editingAppt.time
+    });
+    setEditApptLoading(false);
+    setEditingAppt(null); // close modal
   };
 
   // ─── Create appointment ───
@@ -648,15 +682,24 @@ const AdminDashboard = () => {
                           </span>
                         </td>
                         <td className="px-5 py-4">
-                          <select
-                            value={appt.status}
-                            onChange={(e) => updateAppointmentStatus(appt._id, e.target.value)}
-                            className="px-2 py-1.5 rounded-lg border border-border bg-background text-xs font-medium"
-                          >
-                            <option value="pending">Pending</option>
-                            <option value="confirmed">Confirmed</option>
-                            <option value="cancelled">Cancelled</option>
-                          </select>
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={appt.status}
+                              onChange={(e) => updateAppointment(appt._id, { status: e.target.value })}
+                              className="px-2 py-1.5 rounded-lg border border-border bg-background text-xs font-medium"
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="confirmed">Confirmed</option>
+                              <option value="cancelled">Cancelled</option>
+                            </select>
+                            <button
+                              onClick={() => setEditingAppt(appt)}
+                              className="p-1.5 rounded-lg border border-border bg-background text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors"
+                              title="Edit Appointment"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -769,6 +812,79 @@ const AdminDashboard = () => {
           </motion.div>
         )}
       </div>
+
+      {/* ═══════════ EDIT APPOINTMENT MODAL ═══════════ */}
+      {editingAppt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-background border border-border rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col"
+          >
+            <div className="px-6 py-4 border-b flex items-center justify-between bg-muted/30">
+              <h3 className="text-xl font-heading font-bold">Reschedule</h3>
+              <button 
+                onClick={() => setEditingAppt(null)}
+                className="p-2 hover:bg-muted rounded-full transition-colors text-muted-foreground"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <form id="edit-appt-form" onSubmit={handleEditSubmit} className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">Patient</label>
+                  <p className="px-3 py-2 bg-muted/50 rounded-lg text-sm border border-border opacity-50">
+                    {editingAppt.patientName}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={editingAppt.date}
+                    onChange={(e) => setEditingAppt({ ...editingAppt, date: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">Time Slot</label>
+                  <select
+                    required
+                    value={editingAppt.time}
+                    onChange={(e) => setEditingAppt({ ...editingAppt, time: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                  >
+                    {timeSlotOptions.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">Status</label>
+                  <select
+                    value={editingAppt.status}
+                    onChange={(e) => setEditingAppt({ ...editingAppt, status: e.target.value as any })}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+              </form>
+            </div>
+            <div className="px-6 py-4 border-t bg-muted/10 flex items-center justify-end gap-3">
+              <Button variant="outline" onClick={() => setEditingAppt(null)}>Cancel</Button>
+              <Button type="submit" form="edit-appt-form" disabled={editApptLoading} className="bg-primary text-white">
+                {editApptLoading ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

@@ -34,18 +34,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // Check for token in cookies or localStorage
-    const token = localStorage.getItem('token') || document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+    // Check for token in localStorage or 'auth' cookie (name backend sets)
+    const getCookieValue = (name: string) => {
+      const match = document.cookie.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]+)'));
+      return match ? match[1] : null;
+    };
+    const token = localStorage.getItem('auth_token') || getCookieValue('auth');
     
     if (token) {
       try {
         // The backend token format is <base64url_data>.<signature>
-        // Replace base64url characters with standard base64 characters
         let base64 = token.split('.')[0].replace(/-/g, '+').replace(/_/g, '/');
-        // Pad to 4 characters
-        while (base64.length % 4) {
-          base64 += '=';
-        }
+        while (base64.length % 4) base64 += '=';
         
         const payload = JSON.parse(atob(base64));
         setIsLoggedIn(true);
@@ -64,23 +64,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = (token: string, userData: User) => {
-    localStorage.setItem('token', token);
-    document.cookie = `token=${token}; path=/; max-age=86400;`;
+    // Store token in localStorage with consistent key
+    localStorage.setItem('auth_token', token);
+    // Also set as 'auth' cookie to match backend cookie name expectations
+    document.cookie = `auth=${token}; path=/; max-age=86400; SameSite=Lax`;
     setIsLoggedIn(true);
     setIsAdmin(userData.role === 'admin');
     setUser(userData);
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    localStorage.removeItem('auth_token');
+    document.cookie = 'auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     setIsLoggedIn(false);
     setIsAdmin(false);
     setUser(null);
   };
 
   const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('auth_token');
     if (token) {
       return { 'Authorization': `Bearer ${token}` };
     }

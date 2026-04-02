@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import connectToDatabase from '../../_lib/db.js';
 import { setCorsHeaders, verifyAdmin } from '../../_lib/auth.js';
 import { Appointment } from '../../_models/Appointment.js';
+import { Slot } from '../../_models/Slot.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
@@ -27,23 +28,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ appointments, total, todayCount });
   }
 
-  // PATCH /api/admin/appointments — update status
+  // PATCH /api/admin/appointments — update status or date/time
   if (req.method === 'PATCH') {
     const admin = verifyAdmin(req, res);
     if (!admin) return;
 
-    const { id, status } = req.body;
-    if (!id || !status) {
-      return res.status(400).json({ message: 'id and status required' });
-    }
-    if (!['pending', 'confirmed', 'cancelled'].includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
+    const { id, status, date, time } = req.body;
+    if (!id) {
+      return res.status(400).json({ message: 'id required' });
     }
 
-    const appointment = await Appointment.findByIdAndUpdate(id, { status }, { new: true });
-    if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
+    const currentAppointment = await Appointment.findById(id);
+    if (!currentAppointment) {
+      return res.status(404).json({ message: 'Appointment not found' });
+    }
 
-    return res.status(200).json({ appointment });
+    const updates: any = {};
+    if (status) {
+      if (!['pending', 'confirmed', 'cancelled'].includes(status)) {
+        return res.status(400).json({ message: 'Invalid status' });
+      }
+      updates.status = status;
+    }
+
+    // Handle rescheduling logic
+    if (date && time && (date !== currentAppointment.date || time !== currentAppointment.time)) {
+      // 1. Decrement old slot
+      await Slot.findOneAndUpdate(
+        { date: currentAppointment.date, time: currentAppointment.time },
+        { $inc: { currentBookings: -1 } }
+      );
+
+      // 2. Increment new slot
+      await Slot.findOneAndUpdate(
+        { date, time },
+        { $inc: { currentBookings: 1 }, $setOnInsert: { isBlocked: false, maxPatients: 10 } },
+        { upsert: true, setDefaultsOnInsert: true }
+      );
+
+      updates.date = date;
+      updates.time = time;
+    }
+
+    const updatedAppt = await Appointment.findByIdAndUpdate(id, { $set: updates }, { new: true });
+    
+    return res.status(200).json({ appointment: updatedAppt });
   }
 
   // POST /api/admin/appointments — manually create appointment (admin)

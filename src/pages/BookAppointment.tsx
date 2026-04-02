@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Calendar, Clock, CheckCircle2, XCircle, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Calendar, Clock, CheckCircle2, XCircle, ChevronLeft, ChevronRight, RefreshCw, X, User, Phone, Mail, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { toast } from "sonner";
 
 interface AvailableSlot {
   time: string;
@@ -57,6 +60,17 @@ const BookAppointment = () => {
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  
+  // Booking Form State
+  const [showModal, setShowModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    service: "General Consultation",
+    notes: ""
+  });
 
   const allTimeSlots = generateAllTimeSlots();
 
@@ -85,11 +99,65 @@ const BookAppointment = () => {
 
   const handleBookSlot = (time: string) => {
     setSelectedSlot(time);
-    // Open WhatsApp with pre-filled message
-    const message = encodeURIComponent(
-      `Hi, I would like to book an appointment on ${formatDateDisplay(selectedDate)} at ${time}. Please confirm my booking.`
-    );
-    window.open(`https://wa.me/911234567890?text=${message}`, "_blank");
+    setShowModal(true);
+  };
+
+  const submitBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSlot) return;
+    
+    setIsSubmitting(true);
+    try {
+      // 1. Post to live MongoDB API
+      const dbRes = await fetch('/api/appointments/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patientName: formData.name,
+          patientEmail: formData.email,
+          patientPhone: formData.phone,
+          date: selectedDate,
+          time: selectedSlot,
+          service: formData.service,
+          notes: formData.notes
+        })
+      });
+      
+      const dbData = await dbRes.json();
+      
+      if (!dbRes.ok) {
+        throw new Error(dbData.message || 'Failed to book slot on server.');
+      }
+
+      // 2. Post to Web3Forms Backup (as requested for email notifications)
+      await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          access_key: "2fadd96e-67e3-4aa9-8b6a-8daf18765074",
+          subject: `New Appointment Booking: ${formData.name}`,
+          from_name: "Soulful Booking Hub",
+          message: `Booking for ${formData.name} on ${selectedDate} at ${selectedSlot}. Service: ${formData.service}. Notes: ${formData.notes}. Phone: ${formData.phone}`,
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+        }),
+      }).catch(() => { /* ignore web3forms non-critical errors */ });
+
+      toast.success("Appointment Booked Successfully!");
+      
+      // Cleanup UI
+      setShowModal(false);
+      setFormData({ name: "", email: "", phone: "", service: "General Consultation", notes: "" });
+      
+      // Refresh available slots
+      fetchSlots(selectedDate);
+      
+    } catch (error: any) {
+      toast.error(error.message || "Failed to book appointment. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const isPastDate = selectedDate < getToday();
@@ -265,6 +333,110 @@ const BookAppointment = () => {
       </div>
 
       <Footer />
+
+      {/* Booking Form Dialog System */}
+      <AnimatePresence>
+        {showModal && selectedSlot && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-background border border-border rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              <div className="px-6 py-4 border-b flex items-center justify-between bg-muted/30">
+                <div>
+                  <h3 className="text-xl font-heading font-bold">Confirm Booking</h3>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    {formatDateDisplay(selectedDate)} at {selectedSlot}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setShowModal(false)}
+                  className="p-2 hover:bg-muted rounded-full transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 overflow-y-auto">
+                <form id="booking-form" onSubmit={submitBooking} className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium mb-1.5 flex items-center gap-2">
+                      <User className="w-4 h-4 text-primary" /> Full Name *
+                    </label>
+                    <Input 
+                      required 
+                      value={formData.name} 
+                      onChange={(e) => setFormData({...formData, name: e.target.value})} 
+                      placeholder="e.g. Jane Doe" 
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-1.5 flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-primary" /> Email *
+                      </label>
+                      <Input 
+                        type="email" 
+                        required 
+                        value={formData.email} 
+                        onChange={(e) => setFormData({...formData, email: e.target.value})} 
+                        placeholder="jane@example.com" 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1.5 flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-primary" /> Phone *
+                      </label>
+                      <Input 
+                        required 
+                        value={formData.phone} 
+                        onChange={(e) => setFormData({...formData, phone: e.target.value})} 
+                        placeholder="+91 XXXXX XXXXX" 
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1.5 block">Service</label>
+                    <select
+                      value={formData.service}
+                      onChange={(e) => setFormData({ ...formData, service: e.target.value })}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option>General Consultation</option>
+                      <option>Skin Treatment</option>
+                      <option>Hair Treatment</option>
+                      <option>Laser Therapy</option>
+                      <option>Acne Treatment</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1.5 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-primary" /> Notes
+                    </label>
+                    <Textarea 
+                      value={formData.notes} 
+                      onChange={(e) => setFormData({...formData, notes: e.target.value})} 
+                      placeholder="Any specific concerns..." 
+                      rows={3} 
+                    />
+                  </div>
+                </form>
+              </div>
+
+              <div className="px-6 py-4 border-t bg-muted/10 flex items-center justify-end gap-3">
+                <Button variant="outline" onClick={() => setShowModal(false)} disabled={isSubmitting}>
+                  Cancel
+                </Button>
+                <Button type="submit" form="booking-form" disabled={isSubmitting} className="gradient-rose text-white">
+                  {isSubmitting ? "Confirming..." : "Confirm Booking"}
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
