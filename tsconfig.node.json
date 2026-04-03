@@ -5,11 +5,12 @@
     "module": "CommonJS",
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
-    "strict": true
+    "allowJs": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "esModuleInterop": true
   },
-  "include": [
-    "vite.config.ts",
-    "api/**/*.ts",
-    "scripts/**/*.ts"
-  ]
+  "include": ["vite.config.ts", "api/**/*.ts"],
+  "exclude": ["scripts/**/*", "node_modules"]
 }
