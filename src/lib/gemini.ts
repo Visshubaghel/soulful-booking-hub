@@ -1,13 +1,13 @@
 import { GoogleGenerativeAI, FunctionDeclaration, SchemaType, ChatSession } from "@google/generative-ai";
 
 // Load from Vercel environment variable (set as VITE_GEMINI_API_KEY in Vercel project settings)
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY as string;
+const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string || "").trim();
 
 if (!apiKey) {
   console.warn("[Gemini] VITE_GEMINI_API_KEY is not set. The chatbot will not function.");
 }
 
-const genAI = new GoogleGenerativeAI(apiKey || "");
+const genAI = new GoogleGenerativeAI(apiKey);
 
 // Real availability check — queries the live MongoDB via the /api/slots/available endpoint
 const checkAvailability = async ({ date, time }: { date: string; time?: string }) => {
@@ -131,6 +131,6 @@ export const sendMessageToGemini = async (message: string) => {
     return result.response.text();
   } catch (error: any) {
     console.error("Gemini API Error:", error);
-    return `Sorry, I encountered an error. Please try again or contact the clinic directly.`;
+    return `Sorry, I encountered an error: ${error?.message || "Unknown error"}. Please try again.`;
   }
 };
