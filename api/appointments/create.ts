@@ -3,6 +3,7 @@ import connectToDatabase from '../_lib/db.js';
 import { setCorsHeaders } from '../_lib/auth.js';
 import { Appointment } from '../_models/Appointment.js';
 import { Slot } from '../_models/Slot.js';
+import { Patient } from '../_models/Patient.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
@@ -21,8 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ message: 'Missing required fields: name, age, gender, symptoms, date, time' });
     }
 
-    // Find or create patient
-    const { Patient } = require('../_models/Patient.js');
+    // Find or create patient record
     let patient = await Patient.findOne({ phone: patientPhone, name: patientName });
     if (!patient) {
         const count = await Patient.countDocuments();
