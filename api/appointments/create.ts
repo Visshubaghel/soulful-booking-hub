@@ -15,10 +15,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     await connectToDatabase();
 
-    const { patientName, patientEmail, patientPhone, date, time, service, notes } = req.body;
+    const { patientName, patientEmail, patientPhone, age, gender, symptoms, date, time, service, notes } = req.body;
 
-    if (!patientName || !patientEmail || !date || !time) {
-      return res.status(400).json({ message: 'Missing required fields: name, email, date, time' });
+    if (!patientName || !age || !gender || !symptoms || !date || !time) {
+      return res.status(400).json({ message: 'Missing required fields: name, age, gender, symptoms, date, time' });
+    }
+
+    // Find or create patient
+    const { Patient } = require('../_models/Patient.js');
+    let patient = await Patient.findOne({ phone: patientPhone, name: patientName });
+    if (!patient) {
+        const count = await Patient.countDocuments();
+        const patientId = `PT-${1000 + count + 1}`;
+        patient = new Patient({
+            patientId,
+            name: patientName,
+            age,
+            gender,
+            phone: patientPhone || 'N/A',
+            email: patientEmail,
+        });
+        await patient.save();
     }
 
     // Check slot availability natively
@@ -36,9 +53,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Create the appointment
     const newAppt = new Appointment({
+      patientId: patient._id,
       patientName,
       patientEmail,
       patientPhone,
+      age,
+      gender,
+      symptoms,
       date,
       time,
       service: service || 'General Consultation',
@@ -58,7 +79,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(201).json({ 
       success: true, 
       message: 'Appointment booked successfully.',
-      appointment: newAppt 
+      appointment: newAppt,
+      patient
     });
   } catch (error: any) {
     console.error('Booking creation error:', error);

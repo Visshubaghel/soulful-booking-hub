@@ -1,6 +1,11 @@
 import mongoose from 'mongoose';
 
 const AppointmentSchema = new mongoose.Schema({
+  patientId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Patient',
+    required: true,
+  },
   patientName: {
     type: String,
     required: true,
@@ -8,13 +13,25 @@ const AppointmentSchema = new mongoose.Schema({
   },
   patientEmail: {
     type: String,
-    required: true,
     trim: true,
     lowercase: true,
   },
   patientPhone: {
     type: String,
     trim: true,
+  },
+  age: {
+    type: Number,
+    required: true,
+  },
+  gender: {
+    type: String,
+    enum: ['Male', 'Female', 'Other'],
+    required: true,
+  },
+  symptoms: {
+    type: String,
+    required: true, // "reason for visit"
   },
   date: {
     type: String,
@@ -34,9 +51,17 @@ const AppointmentSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'cancelled'],
+    enum: ['pending', 'confirmed', 'completed', 'cancelled'],
     default: 'pending',
   },
+  nextVisitDate: {
+    type: String, // "YYYY-MM-DD"
+    default: null,
+  },
+  prescriptionData: {
+    type: String, // Store Base64 encoded image string
+    default: null,
+  }
 }, { timestamps: true });
 
 export const Appointment = mongoose.models.Appointment || mongoose.model('Appointment', AppointmentSchema);

@@ -13,6 +13,7 @@ import Chatbot from "./components/Chatbot.tsx";
 import Login from "./pages/Login.tsx";
 import BookAppointment from "./pages/BookAppointment.tsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
+import PrescriptionPrint from "./pages/admin/PrescriptionPrint.tsx";
 import { AuthProvider } from "./lib/AuthContext.tsx";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/book" element={<BookAppointment />} />
             <Route path="/login" element={<Login />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/print/:id" element={<PrescriptionPrint />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Chatbot />

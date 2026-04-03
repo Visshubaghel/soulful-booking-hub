@@ -68,6 +68,9 @@ const BookAppointment = () => {
     name: "",
     email: "",
     phone: "",
+    age: "",
+    gender: "Male",
+    symptoms: "",
     service: "General Consultation",
     notes: ""
   });
@@ -116,6 +119,9 @@ const BookAppointment = () => {
           patientName: formData.name,
           patientEmail: formData.email,
           patientPhone: formData.phone,
+          age: parseInt(formData.age, 10),
+          gender: formData.gender,
+          symptoms: formData.symptoms,
           date: selectedDate,
           time: selectedSlot,
           service: formData.service,
@@ -148,7 +154,7 @@ const BookAppointment = () => {
       
       // Cleanup UI
       setShowModal(false);
-      setFormData({ name: "", email: "", phone: "", service: "General Consultation", notes: "" });
+      setFormData({ name: "", email: "", phone: "", age: "", gender: "Male", symptoms: "", service: "General Consultation", notes: "" });
       
       // Refresh available slots
       fetchSlots(selectedDate);
@@ -397,6 +403,37 @@ const BookAppointment = () => {
                       />
                     </div>
                   </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-1.5 flex items-center gap-2">
+                        Age *
+                      </label>
+                      <Input 
+                        type="number" 
+                        required 
+                        min="1"
+                        max="120"
+                        value={formData.age} 
+                        onChange={(e) => setFormData({...formData, age: e.target.value})} 
+                        placeholder="e.g. 28" 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1.5 flex items-center gap-2">
+                        Gender *
+                      </label>
+                      <select
+                        required
+                        value={formData.gender}
+                        onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                  </div>
                   <div>
                     <label className="text-sm font-medium mb-1.5 block">Service</label>
                     <select
@@ -413,7 +450,19 @@ const BookAppointment = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-1.5 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-primary" /> Notes
+                      <FileText className="w-4 h-4 text-primary" /> Symptoms / Reason for Visit *
+                    </label>
+                    <Textarea 
+                      required
+                      value={formData.symptoms} 
+                      onChange={(e) => setFormData({...formData, symptoms: e.target.value})} 
+                      placeholder="Describe your symptoms or reason for visit..." 
+                      rows={2} 
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1.5 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-primary" /> Additional Notes
                     </label>
                     <Textarea 
                       value={formData.notes} 
