@@ -68,6 +68,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       parts: [{ text: m.text }],
     }));
 
+  // Gemini requires the history to start with a 'user' role message.
+  while (history.length > 0 && history[0].role === 'model') {
+    history.shift();
+  }
+
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
     model: "gemini-2.5-flash",
