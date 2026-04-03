@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageSquare, X, Send, Bot } from "lucide-react";
-import { sendMessageToGemini } from "@/lib/gemini";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Message {
@@ -36,8 +35,19 @@ const Chatbot = () => {
     setIsTyping(true);
     
     try {
-      const response = await sendMessageToGemini(userText);
-      setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), text: response, sender: "bot" }]);
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages, message: userText })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to communicate with AI");
+      }
+      
+      setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), text: data.reply, sender: "bot" }]);
     } catch (error: any) {
       setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), text: `ERROR: ${error.message || JSON.stringify(error)}`, sender: "bot" }]);
     } finally {
